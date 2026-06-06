@@ -32,6 +32,8 @@ async def receive_health(request: Request):
     return JSONResponse({"status": "ok"})
 
 app = mcp.streamable_http_app()
+print(type(app))
+print(dir(app))
 app.routes.append(Route("/health", receive_health, methods=["POST"]))
 
 if __name__ == "__main__":
