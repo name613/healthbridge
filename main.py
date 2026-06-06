@@ -1,9 +1,5 @@
 from mcp.server.fastmcp import FastMCP
-from starlette.applications import Starlette
-from starlette.routing import Route, Mount
-from starlette.requests import Request
-from starlette.responses import JSONResponse
-import uvicorn
+from mcp.server.fastmcp.resources import Resource
 import json
 
 health_data = {}
@@ -25,17 +21,19 @@ def get_steps() -> str:
     """获取步数"""
     return json.dumps(health_data.get("steps", []), ensure_ascii=False, indent=2)
 
+# 自定义路由接收健康数据
+from starlette.routing import Route
+from starlette.requests import Request
+from starlette.responses import JSONResponse
+
 async def receive_health(request: Request):
     data = await request.json()
     health_data.update(data)
     return JSONResponse({"status": "ok"})
 
-mcp_app = mcp.streamable_http_app()
-
-app = Starlette(routes=[
-    Route("/health", receive_health, methods=["POST"]),
-    Mount("/", mcp_app),
-])
+app = mcp.streamable_http_app()
+app.routes.append(Route("/health", receive_health, methods=["POST"]))
 
 if __name__ == "__main__":
+    import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8080)
