@@ -6,10 +6,8 @@ from starlette.responses import JSONResponse
 import uvicorn
 import json
 
-# 存健康数据
 health_data = {}
 
-# MCP服务
 mcp = FastMCP("health-bridge")
 
 @mcp.tool()
@@ -27,13 +25,11 @@ def get_steps() -> str:
     """获取步数"""
     return json.dumps(health_data.get("steps", []), ensure_ascii=False, indent=2)
 
-# 接收HC Webhook推来的数据
 async def receive_health(request: Request):
     data = await request.json()
     health_data.update(data)
     return JSONResponse({"status": "ok"})
 
-# 组合应用
 mcp_app = mcp.streamable_http_app()
 
 app = Starlette(routes=[
