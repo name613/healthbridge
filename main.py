@@ -6,24 +6,24 @@ health_data = {}
 mcp = FastMCP("health-bridge")
 
 @mcp.tool()
-    def get_health_data() -> str:
-return json.dumps(health_data, ensure_ascii=False, indent=2)
+def get_health_data() -> str:
+    return json.dumps(health_data, ensure_ascii=False, indent=2)
 
 @mcp.tool()
-    def get_sleep() -> str:
-return json.dumps(
-health_data.get("sleep", []),
-ensure_ascii=False,
-indent=2
-)
+def get_sleep() -> str:
+    return json.dumps(
+        health_data.get("sleep", []),
+        ensure_ascii=False,
+        indent=2
+    )
 
 @mcp.tool()
-    def get_steps() -> str:
-return json.dumps(
-health_data.get("steps", []),
-ensure_ascii=False,
-indent=2
-)
+def get_sleep() -> str:
+    return json.dumps(
+        health_data.get("sleep", []),
+        ensure_ascii=False,
+        indent=2
+    )
 
 from starlette.routing import Route
 from starlette.requests import Request
