@@ -35,13 +35,6 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 app = mcp.streamable_http_app()
 @app.middleware("http")
-async def debug_request(request, call_next):
-    print("HOST=", request.headers.get("host"))
-    print("ORIGIN=", request.headers.get("origin"))
-    print("PATH=", request.url.path)
-
-    response = await call_next(request)
-    return response
 
 print(type(app))
 print(dir(app))
