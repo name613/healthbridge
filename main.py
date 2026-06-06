@@ -31,10 +31,21 @@ async def receive_health(request: Request):
     health_data.update(data)
     return JSONResponse({"status": "ok"})
 
+from starlette.middleware.trustedhost import TrustedHostMiddleware
+
 app = mcp.streamable_http_app()
+
 print(type(app))
 print(dir(app))
-app.routes.append(Route("/health", receive_health, methods=["POST"]))
+
+app.routes.append(
+    Route("/health", receive_health, methods=["POST"])
+)
+
+app.add_middleware(
+    TrustedHostMiddleware,
+    allowed_hosts=["*"]
+)
 
 if __name__ == "__main__":
     import uvicorn
