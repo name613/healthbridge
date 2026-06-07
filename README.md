@@ -1,4 +1,3 @@
-# healthbridge
 # Health Bridge
 
 一个轻量级 MCP（Model Context Protocol）服务器，用于将手机健康数据同步给 Claude。
