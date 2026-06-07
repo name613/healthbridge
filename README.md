@@ -157,4 +157,4 @@ POST /mcp
 
 ---
 
-Built with ❤️ for Bunny.
+Built with ❤️ by 柒.
