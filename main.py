@@ -8,7 +8,11 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 health_data = {}
 
-mcp = FastMCP("health-bridge")
+mcp = FastMCP(
+    "health-bridge",
+    host="0.0.0.0",
+    port=8080
+)
 
 
 @mcp.tool()
