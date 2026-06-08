@@ -145,6 +145,13 @@ def get_sleep_summary() -> str:
         except Exception:
             continue
 
+    if not bedtimes or not waketimes:
+        return json.dumps(
+            {"error": "no valid sleep data"},
+            ensure_ascii=False,
+            indent=2
+        )
+
     total_sleep = deep + light + rem
     total_in_bed = total_sleep + awake
 
