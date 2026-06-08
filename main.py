@@ -6,6 +6,7 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 from datetime import datetime
+import json
 import logging
 
 health_data = {}
@@ -92,25 +93,41 @@ def get_health_summary() -> str:
 
     return json.dumps(summary, ensure_ascii=False, indent=2)
 
+
 @mcp.tool()
 def get_sleep_summary() -> str:
-    """获取睡眠摘要：入睡/起床时间、各阶段时长、效率"""
+    """获取睡眠摘要"""
     sleep_records = health_data.get("sleep", [])
+
     if not sleep_records:
-        return json.dumps({"error": "no sleep data"}, ensure_ascii=False, indent=2)
+        return json.dumps(
+            {"error": "no sleep data"},
+            ensure_ascii=False,
+            indent=2
+        )
 
     deep = 0.0
     light = 0.0
     rem = 0.0
     awake = 0.0
+
     bedtimes = []
     waketimes = []
 
     for item in sleep_records:
         try:
-            start = datetime.fromisoformat(item["start_time"].replace("Z", "+00:00"))
-            end = datetime.fromisoformat(item["end_time"].replace("Z", "+00:00"))
-            duration_hours = (end - start).total_seconds() / 3600
+            start = datetime.fromisoformat(
+                item["start_time"].replace("Z", "+00:00")
+            )
+
+            end = datetime.fromisoformat(
+                item["end_time"].replace("Z", "+00:00")
+            )
+
+            duration_hours = (
+                end - start
+            ).total_seconds() / 3600
+
             stage = str(item.get("stage", ""))
 
             bedtimes.append(start)
@@ -124,17 +141,19 @@ def get_sleep_summary() -> str:
                 rem += duration_hours
             elif stage == "1":
                 awake += duration_hours
-        except Exception:
-            logging.warning(f"跳过无效记录: {item}")
-            continue
 
-    # 保护：没有任何有效记录时直接返回
-    if not bedtimes or not waketimes:
-        return json.dumps({"error": "无法解析任何有效睡眠记录"}, ensure_ascii=False, indent=2)
+        except Exception:
+            continue
 
     total_sleep = deep + light + rem
     total_in_bed = total_sleep + awake
-    sleep_efficiency = round(total_sleep / total_in_bed * 100, 1) if total_in_bed > 0 else 0.0
+
+    sleep_efficiency = 0
+    if total_in_bed > 0:
+        sleep_efficiency = round(
+            total_sleep / total_in_bed * 100,
+            1
+        )
 
     bedtime = min(bedtimes)
     wake_time = max(waketimes)
@@ -150,7 +169,11 @@ def get_sleep_summary() -> str:
         "sleep_efficiency": sleep_efficiency
     }
 
-    return json.dumps(summary, ensure_ascii=False, indent=2)
+    return json.dumps(
+        summary,
+        ensure_ascii=False,
+        indent=2
+    )
 
 
 @mcp.tool()
