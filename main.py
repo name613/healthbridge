@@ -114,7 +114,18 @@ def get_sleep_summary() -> str:
     bedtimes = []
     waketimes = []
 
-    for item in sleep_records:
+    # Each sleep record is a session that may contain a nested "stages"
+    # list holding the actual stage entries. Flatten to stage records;
+    # fall back to treating the record itself as a stage if not nested.
+    stage_records = []
+    for record in sleep_records:
+        stages = record.get("stages") if isinstance(record, dict) else None
+        if stages:
+            stage_records.extend(stages)
+        else:
+            stage_records.append(record)
+
+    for item in stage_records:
         try:
             start = datetime.fromisoformat(
                 item["start_time"].replace("Z", "+00:00")
