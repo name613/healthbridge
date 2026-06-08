@@ -5,7 +5,7 @@ from starlette.routing import Route
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 from starlette.middleware.trustedhost import TrustedHostMiddleware
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 import json
 import logging
 
@@ -145,9 +145,9 @@ def get_sleep_summary() -> str:
             waketimes.append(end)
 
             if stage == "4":
-                deep += duration_hours
-            elif stage == "5":
                 light += duration_hours
+            elif stage == "5":
+                deep += duration_hours
             elif stage == "6":
                 rem += duration_hours
             elif stage == "1":
@@ -173,8 +173,10 @@ def get_sleep_summary() -> str:
             1
         )
 
-    bedtime = min(bedtimes)
-    wake_time = max(waketimes)
+    # 转成北京时间（UTC+8）显示
+    beijing = timezone(timedelta(hours=8))
+    bedtime = min(bedtimes).astimezone(beijing)
+    wake_time = max(waketimes).astimezone(beijing)
 
     summary = {
         "bedtime": bedtime.strftime("%H:%M"),

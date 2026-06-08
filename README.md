@@ -26,6 +26,26 @@
 
 获取睡眠数据。
 
+### get_sleep_summary
+
+获取睡眠摘要：入睡 / 起床时间、各睡眠阶段时长、睡眠效率。
+
+* `bedtime` / `wake_time` 以**北京时间（UTC+8）**显示。
+* 睡眠阶段编码（`stage`）对应关系：
+
+  | stage | 含义 |
+  | ----- | ---- |
+  | 1     | 清醒（Awake） |
+  | 4     | 浅睡（Light） |
+  | 5     | 深睡（Deep）  |
+  | 6     | REM          |
+
+  睡眠记录按整晚 session 组织，实际阶段数据位于每个 session 的 `stages` 数组内。
+
+### get_health_summary
+
+获取健康数据聚合摘要（步数、心率、距离、卡路里、血氧等）。
+
 ---
 
 ## API
@@ -47,7 +67,16 @@ POST /health
   ],
   "sleep": [
     {
-      "duration_seconds": 28800
+      "session_end_time": "2026-06-08T00:25:00Z",
+      "duration_seconds": 28800,
+      "stages": [
+        {
+          "stage": "5",
+          "start_time": "2026-06-07T16:50:00Z",
+          "end_time": "2026-06-07T18:50:00Z",
+          "duration_seconds": 7200
+        }
+      ]
     }
   ]
 }
