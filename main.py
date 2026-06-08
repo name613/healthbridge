@@ -5,6 +5,8 @@ from starlette.routing import Route
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 from starlette.middleware.trustedhost import TrustedHostMiddleware
+from datetime import datetime
+import logging
 
 health_data = {}
 
@@ -89,6 +91,54 @@ def get_health_summary() -> str:
             pass
 
     return json.dumps(summary, ensure_ascii=False, indent=2)
+
+@mcp.tool()
+def get_sleep_summary() -> str:
+    """获取睡眠摘要：入睡时间、总时长、深睡时间"""
+    sleep_data = health_data.get("sleep", [])
+    if not sleep_data:
+        return json.dumps({"error": "无睡眠数据"}, ensure_ascii=False)
+
+    try:
+        parsed = []
+        for item in sleep_data:
+            start = item.get("start_date")
+            end = item.get("end_date")
+            stage = item.get("stage")
+            if start and end and stage:
+                # UTC时间字符串转换
+                s = datetime.fromisoformat(start.replace("Z", "+00:00"))
+                e = datetime.fromisoformat(end.replace("Z", "+00:00"))
+                duration_min = (e - s).total_seconds() / 60
+                parsed.append({
+                    "start": s,
+                    "end": e,
+                    "duration_min": duration_min,
+                    "stage": stage
+                })
+
+        if not parsed:
+            return json.dumps({"error": "无法解析睡眠时间"}, ensure_ascii=False)
+
+        # 入睡时间：所有阶段的最早开始时间
+        bedtime = min(p["start"] for p in parsed)
+
+        # 总睡眠时长：排除清醒/过渡阶段 (stage == "1")
+        sleep_minutes = sum(p["duration_min"] for p in parsed if p["stage"] != "1")
+
+        # 深睡时间：stage == "4"
+        deep_minutes = sum(p["duration_min"] for p in parsed if p["stage"] == "4")
+
+        summary = {
+            "bedtime": bedtime.isoformat(),
+            "total_sleep_min": round(sleep_minutes, 1),
+            "deep_sleep_min": round(deep_minutes, 1)
+        }
+        return json.dumps(summary, ensure_ascii=False, indent=2)
+
+    except Exception:
+        logging.exception("睡眠摘要计算失败")
+        return json.dumps({"error": "内部错误"}, ensure_ascii=False)
 
 
 @mcp.tool()
