@@ -14,6 +14,82 @@ mcp = FastMCP(
     port=8080
 )
 
+@mcp.tool()
+def get_health_summary() -> str:
+    """获取健康数据聚合摘要"""
+    summary = {}
+
+    # 步数
+    steps = health_data.get("steps", [])
+    if steps:
+        try:
+            total_steps = sum(item.get("count", 0) for item in steps)
+            summary["steps"] = {"total": total_steps}
+        except Exception:
+            pass
+
+    # 心率
+    heart_rates = health_data.get("heart_rate", [])
+    if heart_rates:
+        try:
+            values = [item.get("bpm", 0) for item in heart_rates if item.get("bpm") is not None]
+            if values:
+                summary["heart_rate"] = {
+                    "avg": round(sum(values) / len(values), 1),
+                    "max": max(values),
+                    "min": min(values)
+                }
+        except Exception:
+            pass
+
+    # 静息心率
+    resting = health_data.get("resting_heart_rate", [])
+    if resting:
+        try:
+            values = [item.get("bpm", 0) for item in resting if item.get("bpm") is not None]
+            if values:
+                summary["resting_heart_rate"] = round(sum(values) / len(values), 1)
+        except Exception:
+            pass
+
+    # 距离
+    distance = health_data.get("distance", [])
+    if distance:
+        try:
+            total_distance = sum(item.get("meters", 0) for item in distance)
+            summary["distance_m"] = round(total_distance, 1)
+        except Exception:
+            pass
+
+    # 活跃卡路里
+    calories = health_data.get("active_calories", [])
+    if calories:
+        try:
+            total_calories = sum(item.get("calories", 0) for item in calories)
+            summary["active_calories"] = round(total_calories, 1)
+        except Exception:
+            pass
+
+    # 血氧
+    oxygen = health_data.get("oxygen_saturation", [])
+    if oxygen:
+        try:
+            values = [
+                item.get("percentage", 0)
+                for item in oxygen
+                if item.get("percentage") is not None
+            ]
+            if values:
+                summary["oxygen_saturation"] = {
+                    "avg": round(sum(values) / len(values), 1),
+                    "max": max(values),
+                    "min": min(values)
+                }
+        except Exception:
+            pass
+
+    return json.dumps(summary, ensure_ascii=False, indent=2)
+
 
 @mcp.tool()
 def get_health_data() -> str:
