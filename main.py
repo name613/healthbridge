@@ -94,51 +94,63 @@ def get_health_summary() -> str:
 
 @mcp.tool()
 def get_sleep_summary() -> str:
-    """获取睡眠摘要：入睡时间、总时长、深睡时间"""
-    sleep_data = health_data.get("sleep", [])
-    if not sleep_data:
-        return json.dumps({"error": "无睡眠数据"}, ensure_ascii=False)
+    """获取睡眠摘要：入睡/起床时间、各阶段时长、效率"""
+    sleep_records = health_data.get("sleep", [])
+    if not sleep_records:
+        return json.dumps({"error": "no sleep data"}, ensure_ascii=False, indent=2)
 
-    try:
-        parsed = []
-        for item in sleep_data:
-            start = item.get("start_date")
-            end = item.get("end_date")
-            stage = item.get("stage")
-            if start and end and stage:
-                # UTC时间字符串转换
-                s = datetime.fromisoformat(start.replace("Z", "+00:00"))
-                e = datetime.fromisoformat(end.replace("Z", "+00:00"))
-                duration_min = (e - s).total_seconds() / 60
-                parsed.append({
-                    "start": s,
-                    "end": e,
-                    "duration_min": duration_min,
-                    "stage": stage
-                })
+    deep = 0.0
+    light = 0.0
+    rem = 0.0
+    awake = 0.0
+    bedtimes = []
+    waketimes = []
 
-        if not parsed:
-            return json.dumps({"error": "无法解析睡眠时间"}, ensure_ascii=False)
+    for item in sleep_records:
+        try:
+            start = datetime.fromisoformat(item["start_time"].replace("Z", "+00:00"))
+            end = datetime.fromisoformat(item["end_time"].replace("Z", "+00:00"))
+            duration_hours = (end - start).total_seconds() / 3600
+            stage = str(item.get("stage", ""))
 
-        # 入睡时间：所有阶段的最早开始时间
-        bedtime = min(p["start"] for p in parsed)
+            bedtimes.append(start)
+            waketimes.append(end)
 
-        # 总睡眠时长：排除清醒/过渡阶段 (stage == "1")
-        sleep_minutes = sum(p["duration_min"] for p in parsed if p["stage"] != "1")
+            if stage == "4":
+                deep += duration_hours
+            elif stage == "5":
+                light += duration_hours
+            elif stage == "6":
+                rem += duration_hours
+            elif stage == "1":
+                awake += duration_hours
+        except Exception:
+            logging.warning(f"跳过无效记录: {item}")
+            continue
 
-        # 深睡时间：stage == "4"
-        deep_minutes = sum(p["duration_min"] for p in parsed if p["stage"] == "4")
+    # 保护：没有任何有效记录时直接返回
+    if not bedtimes or not waketimes:
+        return json.dumps({"error": "无法解析任何有效睡眠记录"}, ensure_ascii=False, indent=2)
 
-        summary = {
-            "bedtime": bedtime.isoformat(),
-            "total_sleep_min": round(sleep_minutes, 1),
-            "deep_sleep_min": round(deep_minutes, 1)
-        }
-        return json.dumps(summary, ensure_ascii=False, indent=2)
+    total_sleep = deep + light + rem
+    total_in_bed = total_sleep + awake
+    sleep_efficiency = round(total_sleep / total_in_bed * 100, 1) if total_in_bed > 0 else 0.0
 
-    except Exception:
-        logging.exception("睡眠摘要计算失败")
-        return json.dumps({"error": "内部错误"}, ensure_ascii=False)
+    bedtime = min(bedtimes)
+    wake_time = max(waketimes)
+
+    summary = {
+        "bedtime": bedtime.strftime("%H:%M"),
+        "wake_time": wake_time.strftime("%H:%M"),
+        "total_sleep_hours": round(total_sleep, 2),
+        "deep_sleep_hours": round(deep, 2),
+        "light_sleep_hours": round(light, 2),
+        "rem_sleep_hours": round(rem, 2),
+        "awake_hours": round(awake, 2),
+        "sleep_efficiency": sleep_efficiency
+    }
+
+    return json.dumps(summary, ensure_ascii=False, indent=2)
 
 
 @mcp.tool()
